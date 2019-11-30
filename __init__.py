@@ -8,10 +8,12 @@ import system
 
 # colors
 colors = [0x00FFFF00, 0xFF00FF00, 0xFFFF0000, 0xFF000000, 0x00FF0000, 0x0000FF00, 0xFFFFFF00]
-color = 0
+color = 3
 # buttons
 UP, DOWN, LEFT, RIGHT = defines.BTN_UP, defines.BTN_DOWN, defines.BTN_LEFT, defines.BTN_RIGHT
 A, B = defines.BTN_A, defines.BTN_B
+action = 0
+pause = False
 
 
 def input_up(pressed):
@@ -28,11 +30,13 @@ def input_down(pressed):
 
 def input_left(pressed):
     if pressed:
+        action = action + 1
         pass
 
 
 def input_right(pressed):
     if pressed:
+        action = action - 1
         pass
 
 
@@ -45,7 +49,9 @@ def input_B(pressed):
 
 
 def input_A(pressed):
-    pass
+    global pause
+    if pressed:
+        pause = not pause
 
 
 # init
@@ -114,6 +120,15 @@ eyes = [
         0, 0, 0, 1, 1, 1, 0, 0, 0,
         0, 0, 0, 0, 1, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0,
+    ], [  # 6 small heart
+        0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 1, 0, 0, 0, 1, 0, 0,
+        0, 1, 1, 1, 0, 1, 1, 1, 0,
+        0, 1, 1, 1, 1, 1, 1, 1, 0,
+        0, 0, 1, 1, 1, 1, 1, 0, 0,
+        0, 0, 0, 1, 1, 1, 0, 0, 0,
+        0, 0, 0, 0, 1, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0,
     ]
 ]
 pupils = [
@@ -127,25 +142,51 @@ pupils = [
         1, 1, 1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1, 1,
     ],
-    [  # 1: 4x4 pupil
+    [  # 1: 2x2 pupil
         1, 1, 1, 1, 1, 1, 1, 1, 1,
         1, 0, 0, 1, 1, 1, 1, 1, 1,
         1, 0, 0, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1,
+    ], [  # 2: 3x3 pupil
+        1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 0, 0, 0, 1, 1, 1, 1, 1,
+        1, 0, 0, 0, 1, 1, 1, 1, 1,
+        1, 0, 0, 0, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1,
+    ], [  # 3: 4x4 pupil, corners
+        1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 0, 0, 1, 1, 1, 1, 1,
+        1, 0, 0, 0, 0, 1, 1, 1, 1,
+        1, 0, 0, 0, 0, 1, 1, 1, 1,
+        1, 1, 0, 0, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1, 1,
         1, 1, 1, 1, 1, 1, 1, 1, 1,
     ],
 
 ]
-count = 0
+
+
+# For small pupil locations:
+# 0  1  2  3  4
+# 5  6  7  8  9
+# 10 11 12 13 14
+# 15 16 17 18 19
+# 20 21 22 23 24
+
+#           0  1  2  3  4  5  6  7   8   9   10  11  12  13  14  15  16  17  18  19  20  21  22  23  24  25
 location = [0, 1, 2, 3, 4, 9, 10, 11, 12, 13, 18, 19, 20, 21, 22, 27, 28, 29, 30, 31, 36, 37, 38, 39, 40]
-pos = 11
 
 # patterns: eye, pupil, location
 sequences = [
-    [  # sequence for blinking
+    [  # 0 sequence for blinking
         [1, 1, 12],
         [2, 1, 12],
         [3, 1, 12],
@@ -154,7 +195,7 @@ sequences = [
         [2, 1, 12],
         [1, 1, 12],
     ], [
-        # sequence for looking
+        # 1 sequence for looking
         [1, 1, 12],
         [1, 1, 11],
         [1, 1, 10],
@@ -164,28 +205,50 @@ sequences = [
         [1, 1, 14],
         [1, 1, 13],
     ], [
-        # sequence for steady
+        # 2 sequence for steady
         [1, 1, 12],
-    ],[
-        # sequence for heart
+    ], [
+        # 3 sequence for heart
+        [6, 0, 12],
         [5, 0, 12],
+        [6, 0, 12],
+    ], [
+        # 4 sequence for very open
+        [1, 3, 6],
+    ], [
+        # 5 sequence for rolling continuously
+        [1, 1, 5],
+        [1, 1, 1],
+        [1, 1, 2],
+        [1, 1, 3],
+        [1, 1, 9],
+        [1, 1, 14],
+        [1, 1, 19],
+        [1, 1, 23],
+        [1, 1, 22],
+        [1, 1, 21],
+        [1, 1, 15],
+        [1, 1, 10],
     ]
 ]
-# sequences:  right, left, time, #steps
+# actions:  right, left, time, #steps
 actions = [
-    [1, 1, 0.2, len(sequences[1])],
-    [0, 0, 0.1, len(sequences[0])],
-    [1, 1, 0.2, len(sequences[1])],
-    [2, 0, 0.1, len(sequences[0])],
-    [3, 3, 1, 1],
+    [1, 1, 0.2, len(sequences[1])],  # looking
+    [0, 0, 0.1, len(sequences[0])],  # blinking two eye
+    [1, 1, 0.2, len(sequences[1])],  # looking
+    [4, 4, 0.8, len(sequences[4])],  # wide open eyes
+    [2, 2, 0.5, 1],  # normal
+    [2, 0, 0.1, len(sequences[0])],  # blink one eye
+    [3, 3, 0.5, 2 * len(sequences[3])],  # heart
+    [2, 2, 0.5, 1],  # normal
+    [5, 5, 0.1, 3*len(sequences[5])],  # rolliing
+    [2, 2, 0.5, 1],  # normal
 ]
 
-action = 0
 while True:
     step = 0
     while True:
         print('{}:{}'.format(action, step))
-
         sequence = sequences[actions[action][0]]
         pattern = sequence[step % len(sequence)]
         pupil = [1] * location[pattern[2]] + pupils[pattern[1]]
@@ -200,8 +263,11 @@ while True:
         rgb.image(map_r, (0, 0), (9, 8))
         rgb.image(map_l, (23, 0), (9, 8))
 
-        sleep(actions[action][2])
-        step = (step + 1)  # next step in sequence
-        if step > actions[action][3]:
-            break  # next sequence
+        if not pause:
+            sleep(actions[action][2])
+            step = (step + 1)  # next step in sequence
+            if step > actions[action][3]:
+                break  # next sequence
+        else:
+            sleep(0.5)  # busy waiting.
     action = (action + 1) % len(actions)
