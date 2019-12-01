@@ -5,6 +5,7 @@ import buttons
 import defines
 import rgb
 import system
+from apps.eyes.hcsr04 import HCSR04
 
 # colors
 colors = [0x00FFFF00, 0xFF00FF00, 0xFFFF0000, 0xFF000000, 0x00FF0000, 0x0000FF00, 0xFFFFFF00]
@@ -12,7 +13,7 @@ color = 3
 # buttons
 UP, DOWN, LEFT, RIGHT = defines.BTN_UP, defines.BTN_DOWN, defines.BTN_LEFT, defines.BTN_RIGHT
 A, B = defines.BTN_A, defines.BTN_B
-action = 0
+action_i = 0
 pause = False
 
 
@@ -186,10 +187,7 @@ location = [0, 1, 2, 3, 4, 9, 10, 11, 12, 13, 18, 19, 20, 21, 22, 27, 28, 29, 30
 
 # patterns: eye, pupil, location
 sequences = [
-    [  # 0 sequence for blinking
-        [1, 1, 12],
-        [2, 1, 12],
-        [3, 1, 12],
+    [  # 0 sequence for opening
         [4, 0, 0],
         [3, 1, 12],
         [2, 1, 12],
@@ -229,15 +227,27 @@ sequences = [
         [1, 1, 21],
         [1, 1, 15],
         [1, 1, 10],
+    ],[ # 6 closing
+        [1, 1, 12],
+        [2, 1, 12],
+        [3, 1, 12],
+        [4, 0, 0],
+    ], [ #7 closed
+        [4, 0, 0],
     ]
 ]
 # actions:  right, left, time, #steps
 actions = [
+    [2, 2, 0.5, 1],  # normal  (needed as after opening the first one is skipped)
     [1, 1, 0.2, len(sequences[1])],  # looking
-    [0, 0, 0.1, len(sequences[0])],  # blinking two eye
+    [6, 6, 0.1, len(sequences[6])],  # closing two eye
+    [7, 7, 0.1, len(sequences[7])],  # blinking two eye
+    [0, 0, 0.1, len(sequences[0])],  # opening two eye
     [1, 1, 0.2, len(sequences[1])],  # looking
     [4, 4, 0.8, len(sequences[4])],  # wide open eyes
     [2, 2, 0.5, 1],  # normal
+    [2, 6, 0.1, len(sequences[0])],  # blink one eye
+    [2, 7, 0.1, len(sequences[0])],  # blink one eye
     [2, 0, 0.1, len(sequences[0])],  # blink one eye
     [3, 3, 0.5, 2 * len(sequences[3])],  # heart
     [2, 2, 0.5, 1],  # normal
@@ -245,17 +255,41 @@ actions = [
     [2, 2, 0.5, 1],  # normal
 ]
 
+sensor = HCSR04(trigger_pin=4, echo_pin=5)
+closed = False
 while True:
-    step = 0
+    step_i = 0
+    distance = sensor.distance_mm()
+    print('d: {}, {}'.format(distance, closed))
+    if 0 < distance < 100:
+        action_i = 0
+        if closed:
+            action = [7, 7, 0.1, 1]  # closed
+        else:
+            action = [6, 6, 0.1, len(sequences[6])]  # closing
+        closed = True
+    else:
+        if closed:
+            action_i = 0
+            closed = False
+            action = [0, 0, 0.1, len(sequences[0])]  # opening
+        else:
+            action = actions[action_i]
+
     while True:
-        print('{}:{}'.format(action, step))
-        sequence = sequences[actions[action][0]]
-        pattern = sequence[step % len(sequence)]
+        distance = sensor.distance_mm()
+        if 0 < distance < 100 and closed == False:  # abort action
+            step_i = 0
+            action_i = 0
+            break
+
+        sequence = sequences[action[0]]
+        pattern = sequence[step_i % len(sequence)]
         pupil = [1] * location[pattern[2]] + pupils[pattern[1]]
         map_r = [colors[color] * e * p for e, p in zip(eyes[pattern[0]], pupil)]
 
-        sequence = sequences[actions[action][1]]
-        pattern = sequence[step % len(sequence)]
+        sequence = sequences[action[1]]
+        pattern = sequence[step_i % len(sequence)]
         pupil = [1] * location[pattern[2]] + pupils[pattern[1]]
         map_l = [colors[color] * e * p for e, p in zip(eyes[pattern[0]], pupil)]
 
@@ -264,10 +298,10 @@ while True:
         rgb.image(map_l, (23, 0), (9, 8))
 
         if not pause:
-            sleep(actions[action][2])
-            step = (step + 1)  # next step in sequence
-            if step > actions[action][3]:
+            sleep(action[2])
+            step_i = (step_i + 1)  # next step in sequence
+            if step_i >= action[3]:
                 break  # next sequence
         else:
             sleep(0.5)  # busy waiting.
-    action = (action + 1) % len(actions)
+    action_i = (action_i + 1) % len(actions)
