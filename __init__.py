@@ -5,7 +5,7 @@ import buttons
 import defines
 import rgb
 import system
-from apps.eyes.hcsr04 import HCSR04
+from .hcsr04 import HCSR04
 
 # colors
 colors = [0x00FFFF00, 0xFF00FF00, 0xFFFF0000, 0xFF000000, 0x00FF0000, 0x0000FF00, 0xFFFFFF00]
@@ -20,24 +20,26 @@ pause = False
 def input_up(pressed):
     if pressed:
         global color
-        color = (color + 1) % (len(colors))
+        color = (color + 1) % len(colors)
 
 
 def input_down(pressed):
     if pressed:
         global color
-        color = (color - 1) % (len(colors))
+        color = (color - 1) % len(colors)
 
 
 def input_left(pressed):
+    global action_i, actions
     if pressed:
-        action = action + 1
+        action_i = (action_i + 1) % len(actions)
         pass
 
 
 def input_right(pressed):
+    global action_i, actions
     if pressed:
-        action = action - 1
+        action_i = (action_i - 1) % len(actions)
         pass
 
 
@@ -260,7 +262,7 @@ closed = False
 while True:
     step_i = 0
     distance = sensor.distance_mm()
-    print('d: {}, {}'.format(distance, closed))
+    # print('d: {}, {}'.format(distance, closed))
     if 0 < distance < 100:
         action_i = 0
         if closed:
